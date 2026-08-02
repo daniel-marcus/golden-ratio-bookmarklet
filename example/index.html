@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Golden Ratio Bookmarklet</title>
+    <link rel="icon" type="image/svg+xml" href="./assets/favicon.svg" />
+    <meta name="description" content="A bookmarklet that overlays a golden-ratio grid on top of any webpage." />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Golden Ratio Bookmarklet" />
+    <meta property="og:description" content="A bookmarklet that overlays a golden-ratio grid on top of any webpage." />
+    <meta property="og:image" content="./assets/og-image.png" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Golden Ratio Bookmarklet" />
+    <meta name="twitter:description" content="A bookmarklet that overlays a golden-ratio grid on top of any webpage." />
+    <meta name="twitter:image" content="./assets/og-image.png" />
+    <style>
+      :root {
+        color-scheme: light dark;
+        --phi: 1.618;
+        --space-m: 1rem;
+        --space-l: calc(1rem * var(--phi)); /* ~1.618rem */
+        --space-xl: calc(1rem * var(--phi) * var(--phi)); /* ~2.618rem */
+      }
+      body {
+        font-family:
+          system-ui,
+          -apple-system,
+          "Segoe UI",
+          sans-serif;
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      h1 {
+        font-size: calc(1rem * var(--phi) * var(--phi)); /* ~2.618rem */
+        margin-block-end: var(--space-l);
+      }
+      .install {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.6rem 1rem;
+        border-radius: 999px;
+        background: #ff2fb0;
+        color: #fff;
+        text-decoration: none;
+        font-weight: 600;
+        cursor: grab;
+        user-select: none;
+      }
+      .install:active {
+        cursor: grabbing;
+      }
+      p {
+        margin-block: 0;
+      }
+      p:not(:last-of-type) {
+        margin-block-end: var(--space-l);
+      }
+
+      /* The stage is a golden rectangle, centered -- exactly what the
+         bookmarklet's own default overlay looks like: width capped to
+         the viewport height * phi, so on a landscape viewport narrower
+         than golden it shrinks (and letterboxes vertically) instead of
+         overflowing. Splitting it the same way the overlay's spiral does
+         (square, then square-of-the-remainder, then the last sliver)
+         makes the page's own boxes line up with the real overlay. */
+      .stage {
+        position: relative;
+        container-type: size;
+        width: min(100vw, 100vh * var(--phi));
+        aspect-ratio: var(--phi) / 1;
+        display: grid;
+        grid-template-columns: minmax(0, 1.618fr) minmax(0, 1fr);
+      }
+      .spiral-arc {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        overflow: visible;
+        z-index: -1;
+      }
+      .circle-panel {
+        display: flex;
+      }
+      .circle-panel .circle {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        background: #a7c0f2;
+        opacity: 50%;
+      }
+      .right {
+        display: grid;
+        grid-template-rows: minmax(0, 1.618fr) minmax(0, 1fr);
+        min-height: 0;
+        min-width: 0;
+      }
+      .title-panel {
+        position: relative;
+        z-index: 1;
+        padding: var(--space-xl);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        min-height: 0;
+        overflow-y: visible;
+      }
+      .image-panel {
+        min-height: 0;
+        min-width: 0;
+        overflow: hidden;
+      }
+      .image-panel svg {
+        display: block;
+        width: 100%;
+        height: 100%;
+        transform: scale(-1, -1);
+      }
+
+      /* Portrait/mobile: not enough room for the big decorative circle
+         alongside real content, so it's hidden. The callout takes the
+         big split, and the small decorative spiral image (with its own
+         circles) takes the small split below it -- reusing the same
+         markup, just re-flowed into the stage's own two row tracks via
+         display:contents rather than needing a rotated re-draw. The big
+         background arc reuses the exact same landscape-viewBox element
+         too: container query units let it size itself from the stage's
+         *cross* axis (100cqh wide, 100cqw tall -- i.e. its natural
+         phi:1 shape, undistorted), then a 90deg rotation swaps that
+         footprint to fill the now-portrait stage exactly. */
+      @media (max-aspect-ratio: 1/1) {
+        .stage {
+          width: auto;
+          height: min(100vh, 100vw * var(--phi));
+          aspect-ratio: 1 / var(--phi);
+          grid-template-columns: 1fr;
+          grid-template-rows: 1.618fr 1fr;
+        }
+        .spiral-arc {
+          inset: auto;
+          top: 50%;
+          left: 50%;
+          width: 100cqh;
+          height: 100cqw;
+          transform: translate(-50%, -50%) rotate(90deg);
+        }
+        .circle-panel {
+          display: none;
+        }
+        .right {
+          display: contents;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="stage">
+      <svg class="spiral-arc" viewBox="0 0 1000 618" preserveAspectRatio="none" overflow="visible" aria-hidden="true">
+        <g transform="translate(0, 618) scale(1, -1)">
+          <path
+            d="M 0.0 0.0 A 618.0 618.0 0 0 0 618.0 618.0 A 382.0 382.0 0 0 0 1000.0 236.0 A 236.0 236.0 0 0 0 764.0 0.0 A 146.0 146.0 0 0 0 618.0 146.0 A 90.0 90.0 0 0 0 708.0 236.0 A 56.0 56.0 0 0 0 764.0 180.0 A 34.0 34.0 0 0 0 730.0 146.0 A 22.0 22.0 0 0 0 708.0 168.0 A 12.0 12.0 0 0 0 720.0 180.0 A 10.0 10.0 0 0 0 730.0 170.0"
+            fill="none"
+            stroke="#94a3b8"
+            stroke-width="2"
+          />
+        </g>
+      </svg>
+
+      <div class="circle-panel">
+        <div class="circle"></div>
+      </div>
+
+      <div class="right">
+        <div class="title-panel">
+          <h1>Golden Ratio Bookmarklet</h1>
+          <p><strong>Drag this link to your bookmarks bar:</strong></p>
+          <p><a class="install" id="install-link" href="#">Golden Ratio Overlay</a></p>
+          <p>
+            Then click it on any page to show the overlay.
+          </p>
+        </div>
+
+        <div class="image-panel">
+          <svg viewBox="0 0 1000 618" preserveAspectRatio="none" role="img" aria-label="placeholder">
+            <g transform="translate(0, 618) scale(1, -1)">
+              <rect x="0.0" y="0.0" width="618.0" height="618.0" fill="none" />
+              <rect x="618.0" y="236.0" width="382.0" height="382.0" fill="none" />
+              <rect x="764.0" y="0.0" width="236.0" height="236.0" fill="none" />
+              <rect x="618.0" y="0.0" width="146.0" height="146.0" fill="none" />
+              <rect x="618.0" y="146.0" width="90.0" height="90.0" fill="none" />
+              <rect x="708.0" y="180.0" width="56.0" height="56.0" fill="none" />
+              <rect x="730.0" y="146.0" width="34.0" height="34.0" fill="none" />
+              <rect x="708.0" y="146.0" width="22.0" height="22.0" fill="none" />
+              <circle cx="309.0" cy="309.0" r="309.0" fill="#a7c0f2" fill-opacity="0.5" />
+              <circle cx="809.0" cy="427.0" r="191.0" fill="#a7c0f2" fill-opacity="0.5" />
+              <circle cx="882.0" cy="118.0" r="118.0" fill="#a7c0f2" fill-opacity="0.5" />
+              <circle cx="691.0" cy="73.0" r="73.0" fill="#a7c0f2" fill-opacity="0.5" />
+              <circle cx="663.0" cy="191.0" r="45.0" fill="#a7c0f2" fill-opacity="0.5" />
+              <circle cx="736.0" cy="208.0" r="28.0" fill="#a7c0f2" fill-opacity="0.5" />
+              <circle cx="747.0" cy="163.0" r="17.0" fill="#a7c0f2" fill-opacity="0.5" />
+              <circle cx="719.0" cy="157.0" r="11.0" fill="#a7c0f2" fill-opacity="0.5" />
+            </g>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="./frontend.ts"></script>
+  </body>
+</html>
