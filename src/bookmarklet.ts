@@ -18,7 +18,7 @@ function makeButton(label: string, action: string): HTMLButtonElement {
   btn.style.height = "28px";
   btn.style.border = "1px solid #ff2fb0";
   btn.style.borderRadius = "4px";
-  btn.style.background = "#fff";
+  btn.style.background = "transparent";
   btn.style.color = "#ff2fb0";
   btn.style.cursor = "pointer";
   btn.style.fontSize = "14px";

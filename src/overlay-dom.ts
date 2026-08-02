@@ -85,7 +85,7 @@ export function createOverlay(): Overlay {
   controls.style.gap = "6px";
   controls.style.padding = "4px";
   controls.style.borderRadius = "6px";
-  controls.style.background = "rgba(255, 255, 255, 0.85)";
+  controls.style.background = "transparent";
   controls.style.pointerEvents = "auto";
   root.appendChild(controls);
 
