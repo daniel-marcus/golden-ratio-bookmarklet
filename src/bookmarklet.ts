@@ -39,6 +39,21 @@ export function init(): void {
   let state: OverlayState = defaultState(window.innerWidth, window.innerHeight);
   renderOverlay(overlay, state);
 
+  // Pointer events can fire far more often than the browser can paint, and
+  // renderOverlay rebuilds the whole spiral's SVG nodes -- rendering on every
+  // event during a fast drag makes the UI fall behind the cursor. Coalescing
+  // into one render per animation frame keeps input handling cheap while
+  // rendering only as often as the screen can actually show it.
+  let renderScheduled = false;
+  function scheduleRender() {
+    if (renderScheduled) return;
+    renderScheduled = true;
+    requestAnimationFrame(() => {
+      renderScheduled = false;
+      renderOverlay(overlay, state);
+    });
+  }
+
   const flipHorizontalBtn = makeButton("⇆", "flip-horizontal");
   const flipVerticalBtn = makeButton("⇅", "flip-vertical");
   const rotateBtn = makeButton("⟳", "rotate");
@@ -80,12 +95,15 @@ export function init(): void {
             ? startState.width + sign.x * dx
             : startState.height + sign.y * dy;
         state = resizeFromCorner(startState, corner, newSize);
-        renderOverlay(overlay, state);
+        scheduleRender();
       }
 
       function onUp() {
         window.removeEventListener("pointermove", onMove);
         window.removeEventListener("pointerup", onUp);
+        // commit the final position immediately rather than waiting on a
+        // possibly-still-pending animation frame
+        renderOverlay(overlay, state);
       }
 
       window.addEventListener("pointermove", onMove);
@@ -101,12 +119,15 @@ export function init(): void {
 
     function onMove(moveEvent: PointerEvent) {
       state = move(startState, moveEvent.clientX - startX, moveEvent.clientY - startY);
-      renderOverlay(overlay, state);
+      scheduleRender();
     }
 
     function onUp() {
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", onUp);
+      // commit the final position immediately rather than waiting on a
+      // possibly-still-pending animation frame
+      renderOverlay(overlay, state);
     }
 
     window.addEventListener("pointermove", onMove);

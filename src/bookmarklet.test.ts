@@ -142,6 +142,48 @@ describe("init", () => {
     expect(offsetY + height / 2).toBeCloseTo(0 + startHeight / 2);
   });
 
+  test("batches resize renders into a single animation frame during a fast drag", () => {
+    const rafCallbacks: FrameRequestCallback[] = [];
+    const originalRaf = window.requestAnimationFrame;
+    window.requestAnimationFrame = ((cb: FrameRequestCallback) => {
+      rafCallbacks.push(cb);
+      return rafCallbacks.length;
+    }) as typeof requestAnimationFrame;
+
+    try {
+      init();
+      const root = document.getElementById(OVERLAY_ID)!;
+      const startWidth = parseFloat(root.style.width);
+      const handle = Array.from(
+        root.querySelectorAll<HTMLElement>("div"),
+      ).find((el) => el.style.bottom === "-8px" && el.style.right === "-8px")!;
+
+      handle.dispatchEvent(
+        new PointerEvent("pointerdown", { clientX: 0, clientY: 0, bubbles: true }),
+      );
+      window.dispatchEvent(
+        new PointerEvent("pointermove", { clientX: 10, clientY: 0, bubbles: true }),
+      );
+      window.dispatchEvent(
+        new PointerEvent("pointermove", { clientX: 20, clientY: 0, bubbles: true }),
+      );
+      window.dispatchEvent(
+        new PointerEvent("pointermove", { clientX: 30, clientY: 0, bubbles: true }),
+      );
+
+      // three pointermoves should coalesce into exactly one scheduled frame,
+      // and the DOM should not reflect any resize until that frame runs
+      expect(rafCallbacks.length).toBe(1);
+      expect(parseFloat(root.style.width)).toBeCloseTo(startWidth);
+
+      rafCallbacks[0]!(0);
+
+      expect(parseFloat(root.style.width)).toBeCloseTo(startWidth + 30);
+    } finally {
+      window.requestAnimationFrame = originalRaf;
+    }
+  });
+
   test("reopening after close resets the offset to zero (viewport-centered)", () => {
     init();
     let root = document.getElementById(OVERLAY_ID)!;
