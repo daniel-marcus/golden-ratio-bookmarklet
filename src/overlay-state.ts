@@ -27,12 +27,8 @@ const DEFAULT_MIN_SIZE = 40;
  * oriented to match the viewport's own aspect (landscape stays wide;
  * portrait, e.g. a phone held upright, gets the 90deg-turned version).
  */
-export function defaultState(
-  viewportWidth: number,
-  viewportHeight: number,
-): OverlayState {
-  const orientation: Orientation =
-    viewportWidth >= viewportHeight ? "landscape" : "portrait";
+export function defaultState(viewportWidth: number, viewportHeight: number): OverlayState {
+  const orientation: Orientation = viewportWidth >= viewportHeight ? "landscape" : "portrait";
 
   // Vertically flipped by default: the common golden-spiral illustration
   // has the large square along the bottom, not the top.
@@ -79,8 +75,7 @@ export function rotate(
   viewportWidth: number,
   viewportHeight: number,
 ): OverlayState {
-  const orientation: Orientation =
-    state.orientation === "landscape" ? "portrait" : "landscape";
+  const orientation: Orientation = state.orientation === "landscape" ? "portrait" : "landscape";
 
   // Untouched sizing tracks the viewport, not the previous rotation's
   // (possibly clamped) dimensions -- otherwise alternating rotates ratchet

@@ -6,8 +6,7 @@ const OUT_HTML_PATH = new URL("../out/index.html", import.meta.url);
 const OUT_ASSETS_DIR = new URL("../out/assets/", import.meta.url);
 
 const INSTALL_LINK_HREF = /(id="install-link"\s+href=")#(")/;
-const FRONTEND_SCRIPT_TAG =
-  /\s*<script type="module" src="\.\/frontend\.ts"><\/script>\n/;
+const FRONTEND_SCRIPT_TAG = /\s*<script type="module" src="\.\/frontend\.ts"><\/script>\n/;
 
 const bookmarklet = await buildBookmarkletUri();
 const source = await Bun.file(EXAMPLE_HTML_PATH).text();

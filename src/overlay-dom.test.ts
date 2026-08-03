@@ -63,9 +63,7 @@ describe("renderOverlay", () => {
     const overlay = createOverlay();
     const state = defaultState(1000, 800);
     renderOverlay(overlay, state);
-    expect(overlay.root.style.transform).toContain(
-      "translate(calc(-50% + 0px), calc(-50% + 0px))",
-    );
+    expect(overlay.root.style.transform).toContain("translate(calc(-50% + 0px), calc(-50% + 0px))");
   });
 
   test("applies a horizontal mirror transform when flippedX", () => {

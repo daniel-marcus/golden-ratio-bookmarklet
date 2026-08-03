@@ -33,9 +33,7 @@ describe("init", () => {
     init();
     const root = document.getElementById(OVERLAY_ID)!;
     const svg = root.querySelector("svg")!;
-    const flipBtn = root.querySelector<HTMLElement>(
-      '[data-action="flip-horizontal"]',
-    )!;
+    const flipBtn = root.querySelector<HTMLElement>('[data-action="flip-horizontal"]')!;
     const transformBefore = svg.style.transform;
 
     click(flipBtn);
@@ -50,9 +48,7 @@ describe("init", () => {
     init();
     const root = document.getElementById(OVERLAY_ID)!;
     const svg = root.querySelector("svg")!;
-    const flipBtn = root.querySelector<HTMLElement>(
-      '[data-action="flip-vertical"]',
-    )!;
+    const flipBtn = root.querySelector<HTMLElement>('[data-action="flip-vertical"]')!;
     // default state is already flipped vertically, so the first click un-flips it
     expect(svg.style.transform).toContain("-1)");
 
@@ -89,9 +85,7 @@ describe("init", () => {
   test("dragging an edge strip freely repositions the overlay", () => {
     init();
     const root = document.getElementById(OVERLAY_ID)!;
-    const strip = root.querySelectorAll<HTMLElement>(
-      'div[style*="cursor: move"]',
-    )[0]!;
+    const strip = root.querySelectorAll<HTMLElement>('div[style*="cursor: move"]')[0]!;
 
     strip.dispatchEvent(
       new PointerEvent("pointerdown", { clientX: 100, clientY: 100, bubbles: true }),
@@ -103,9 +97,7 @@ describe("init", () => {
       new PointerEvent("pointerup", { clientX: 140, clientY: 70, bubbles: true }),
     );
 
-    expect(root.style.transform).toContain(
-      "translate(calc(-50% + 40px), calc(-50% + -30px))",
-    );
+    expect(root.style.transform).toContain("translate(calc(-50% + 40px), calc(-50% + -30px))");
   });
 
   test("dragging a corner handle resizes the overlay, anchoring the opposite corner", () => {
@@ -113,9 +105,9 @@ describe("init", () => {
     const root = document.getElementById(OVERLAY_ID)!;
     const startWidth = parseFloat(root.style.width);
     const startHeight = parseFloat(root.style.height);
-    const handle = Array.from(
-      root.querySelectorAll<HTMLElement>("div"),
-    ).find((el) => el.style.top === "-8px" && el.style.left === "-8px")!;
+    const handle = Array.from(root.querySelectorAll<HTMLElement>("div")).find(
+      (el) => el.style.top === "-8px" && el.style.left === "-8px",
+    )!;
 
     handle.dispatchEvent(
       new PointerEvent("pointerdown", { clientX: 0, clientY: 0, bubbles: true }),
@@ -154,9 +146,9 @@ describe("init", () => {
       init();
       const root = document.getElementById(OVERLAY_ID)!;
       const startWidth = parseFloat(root.style.width);
-      const handle = Array.from(
-        root.querySelectorAll<HTMLElement>("div"),
-      ).find((el) => el.style.bottom === "-8px" && el.style.right === "-8px")!;
+      const handle = Array.from(root.querySelectorAll<HTMLElement>("div")).find(
+        (el) => el.style.bottom === "-8px" && el.style.right === "-8px",
+      )!;
 
       handle.dispatchEvent(
         new PointerEvent("pointerdown", { clientX: 0, clientY: 0, bubbles: true }),
@@ -187,27 +179,19 @@ describe("init", () => {
   test("reopening after close resets the offset to zero (viewport-centered)", () => {
     init();
     let root = document.getElementById(OVERLAY_ID)!;
-    const strip = root.querySelectorAll<HTMLElement>(
-      'div[style*="cursor: move"]',
-    )[0]!;
-    strip.dispatchEvent(
-      new PointerEvent("pointerdown", { clientX: 0, clientY: 0, bubbles: true }),
-    );
+    const strip = root.querySelectorAll<HTMLElement>('div[style*="cursor: move"]')[0]!;
+    strip.dispatchEvent(new PointerEvent("pointerdown", { clientX: 0, clientY: 0, bubbles: true }));
     window.dispatchEvent(
       new PointerEvent("pointermove", { clientX: 500, clientY: 500, bubbles: true }),
     );
     window.dispatchEvent(
       new PointerEvent("pointerup", { clientX: 500, clientY: 500, bubbles: true }),
     );
-    expect(root.style.transform).toContain(
-      "translate(calc(-50% + 500px), calc(-50% + 500px))",
-    );
+    expect(root.style.transform).toContain("translate(calc(-50% + 500px), calc(-50% + 500px))");
 
     init(); // close
     init(); // reopen
     root = document.getElementById(OVERLAY_ID)!;
-    expect(root.style.transform).toContain(
-      "translate(calc(-50% + 0px), calc(-50% + 0px))",
-    );
+    expect(root.style.transform).toContain("translate(calc(-50% + 0px), calc(-50% + 0px))");
   });
 });

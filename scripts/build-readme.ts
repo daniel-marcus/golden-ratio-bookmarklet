@@ -9,14 +9,11 @@ async function updateReadme(bookmarklet: string): Promise<void> {
   const startIdx = readme.indexOf(START_MARKER);
   const endIdx = readme.indexOf(END_MARKER);
   if (startIdx === -1 || endIdx === -1) {
-    throw new Error(
-      `README.md is missing ${START_MARKER} / ${END_MARKER} markers`,
-    );
+    throw new Error(`README.md is missing ${START_MARKER} / ${END_MARKER} markers`);
   }
 
   const block = `${START_MARKER}\n\`\`\`text\n${bookmarklet}\n\`\`\`\n${END_MARKER}`;
-  const updated =
-    readme.slice(0, startIdx) + block + readme.slice(endIdx + END_MARKER.length);
+  const updated = readme.slice(0, startIdx) + block + readme.slice(endIdx + END_MARKER.length);
 
   await Bun.write(README_PATH, updated);
 }

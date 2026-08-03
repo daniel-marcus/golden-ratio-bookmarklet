@@ -45,9 +45,7 @@ function createHandle(corner: Corner): HTMLDivElement {
 
 const DRAG_STRIP_THICKNESS = 14;
 
-function svgEl<K extends keyof SVGElementTagNameMap>(
-  tag: K,
-): SVGElementTagNameMap[K] {
+function svgEl<K extends keyof SVGElementTagNameMap>(tag: K): SVGElementTagNameMap[K] {
   return document.createElementNS(SVG_NS, tag);
 }
 

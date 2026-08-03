@@ -1,10 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import {
-  PHI,
-  computeSpiralSquares,
-  squareToArc,
-  squareToCircle,
-} from "./geometry";
+import { PHI, computeSpiralSquares, squareToArc, squareToCircle } from "./geometry";
 
 describe("computeSpiralSquares", () => {
   test("cuts the first square from the short side of a landscape rect", () => {
