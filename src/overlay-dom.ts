@@ -1,5 +1,5 @@
 import { computeSpiralSquares, squareToArc, squareToCircle } from "./geometry";
-import type { OverlayState } from "./overlay-state";
+import type { Corner, OverlayState } from "./overlay-state";
 
 export const OVERLAY_ID = "golden-ratio-bookmarklet-overlay";
 const SVG_NS = "http://www.w3.org/2000/svg";
@@ -9,9 +9,38 @@ const MIN_SQUARE_PX = 6;
 export interface Overlay {
   root: HTMLDivElement;
   svg: SVGSVGElement;
-  handle: HTMLDivElement;
+  handles: Record<Corner, HTMLDivElement>;
   controls: HTMLDivElement;
   dragFrame: HTMLDivElement;
+}
+
+const CORNERS: Corner[] = ["top-left", "top-right", "bottom-left", "bottom-right"];
+
+const HANDLE_POSITION: Record<
+  Corner,
+  { top?: string; bottom?: string; left?: string; right?: string; cursor: string }
+> = {
+  "top-left": { top: "-8px", left: "-8px", cursor: "nwse-resize" },
+  "top-right": { top: "-8px", right: "-8px", cursor: "nesw-resize" },
+  "bottom-left": { bottom: "-8px", left: "-8px", cursor: "nesw-resize" },
+  "bottom-right": { bottom: "-8px", right: "-8px", cursor: "nwse-resize" },
+};
+
+function createHandle(corner: Corner): HTMLDivElement {
+  const handle = document.createElement("div");
+  handle.style.position = "absolute";
+  const pos = HANDLE_POSITION[corner];
+  if (pos.top) handle.style.top = pos.top;
+  if (pos.bottom) handle.style.bottom = pos.bottom;
+  if (pos.left) handle.style.left = pos.left;
+  if (pos.right) handle.style.right = pos.right;
+  handle.style.width = "16px";
+  handle.style.height = "16px";
+  handle.style.borderRadius = "50%";
+  handle.style.background = STROKE;
+  handle.style.cursor = pos.cursor;
+  handle.style.pointerEvents = "auto";
+  return handle;
 }
 
 const DRAG_STRIP_THICKNESS = 14;
@@ -65,17 +94,10 @@ export function createOverlay(): Overlay {
   }
   root.appendChild(dragFrame);
 
-  const handle = document.createElement("div");
-  handle.style.position = "absolute";
-  handle.style.right = "-8px";
-  handle.style.bottom = "-8px";
-  handle.style.width = "16px";
-  handle.style.height = "16px";
-  handle.style.borderRadius = "50%";
-  handle.style.background = STROKE;
-  handle.style.cursor = "nwse-resize";
-  handle.style.pointerEvents = "auto";
-  root.appendChild(handle);
+  const handles = Object.fromEntries(
+    CORNERS.map((corner) => [corner, createHandle(corner)]),
+  ) as Record<Corner, HTMLDivElement>;
+  for (const corner of CORNERS) root.appendChild(handles[corner]);
 
   const controls = document.createElement("div");
   controls.style.position = "absolute";
@@ -89,7 +111,7 @@ export function createOverlay(): Overlay {
   controls.style.pointerEvents = "auto";
   root.appendChild(controls);
 
-  return { root, svg, handle, controls, dragFrame };
+  return { root, svg, handles, controls, dragFrame };
 }
 
 export function renderOverlay(overlay: Overlay, state: OverlayState): void {

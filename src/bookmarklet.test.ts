@@ -108,6 +108,40 @@ describe("init", () => {
     );
   });
 
+  test("dragging a corner handle resizes the overlay, anchoring the opposite corner", () => {
+    init();
+    const root = document.getElementById(OVERLAY_ID)!;
+    const startWidth = parseFloat(root.style.width);
+    const startHeight = parseFloat(root.style.height);
+    const handle = Array.from(
+      root.querySelectorAll<HTMLElement>("div"),
+    ).find((el) => el.style.top === "-8px" && el.style.left === "-8px")!;
+
+    handle.dispatchEvent(
+      new PointerEvent("pointerdown", { clientX: 0, clientY: 0, bubbles: true }),
+    );
+    window.dispatchEvent(
+      new PointerEvent("pointermove", { clientX: -40, clientY: 0, bubbles: true }),
+    );
+    window.dispatchEvent(
+      new PointerEvent("pointerup", { clientX: -40, clientY: 0, bubbles: true }),
+    );
+
+    const width = parseFloat(root.style.width);
+    const height = parseFloat(root.style.height);
+    expect(width).toBeCloseTo(startWidth + 40);
+    expect(height).toBeCloseTo(width / PHI);
+
+    const match = root.style.transform.match(
+      /translate\(calc\(-50% \+ ([-\d.]+)px\), calc\(-50% \+ ([-\d.]+)px\)\)/,
+    )!;
+    const offsetX = parseFloat(match[1]!);
+    const offsetY = parseFloat(match[2]!);
+    // dragging the top-left handle anchors the bottom-right corner in place
+    expect(offsetX + width / 2).toBeCloseTo(0 + startWidth / 2);
+    expect(offsetY + height / 2).toBeCloseTo(0 + startHeight / 2);
+  });
+
   test("reopening after close resets the offset to zero (viewport-centered)", () => {
     init();
     let root = document.getElementById(OVERLAY_ID)!;

@@ -11,11 +11,21 @@ describe("createOverlay", () => {
     overlay.root.remove();
   });
 
-  test("contains an SVG for the golden-ratio drawing and a resize handle", () => {
+  test("contains an SVG for the golden-ratio drawing and four corner resize handles", () => {
     const overlay = createOverlay();
     expect(overlay.svg.tagName.toLowerCase()).toBe("svg");
-    expect(overlay.handle).toBeInstanceOf(HTMLElement);
+    for (const corner of ["top-left", "top-right", "bottom-left", "bottom-right"] as const) {
+      expect(overlay.handles[corner]).toBeInstanceOf(HTMLElement);
+    }
     expect(overlay.controls).toBeInstanceOf(HTMLElement);
+  });
+
+  test("gives opposite-diagonal corners matching resize cursors", () => {
+    const overlay = createOverlay();
+    expect(overlay.handles["top-left"].style.cursor).toBe("nwse-resize");
+    expect(overlay.handles["bottom-right"].style.cursor).toBe("nwse-resize");
+    expect(overlay.handles["top-right"].style.cursor).toBe("nesw-resize");
+    expect(overlay.handles["bottom-left"].style.cursor).toBe("nesw-resize");
   });
 
   test("contains a drag frame with four edge strips that catch pointer events", () => {

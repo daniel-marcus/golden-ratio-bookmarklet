@@ -5,8 +5,7 @@ import {
   flipHorizontal,
   flipVertical,
   move,
-  resizeHeight,
-  resizeWidth,
+  resizeFromCorner,
   rotate,
 } from "./overlay-state";
 
@@ -84,7 +83,7 @@ describe("move", () => {
 describe("rotate", () => {
   test("turning a landscape rect 90deg makes it portrait with swapped dimensions, when it still fits", () => {
     // resized down first so the swapped (portrait) dimensions comfortably fit the viewport
-    const state = resizeWidth(defaultState(1000, 800), 300);
+    const state = resizeFromCorner(defaultState(1000, 800), "bottom-right", 300);
     const turned = rotate(state, 1000, 800);
     expect(turned.orientation).toBe("portrait");
     expect(turned.width).toBeCloseTo(state.height);
@@ -104,7 +103,7 @@ describe("rotate", () => {
   });
 
   test("rotating twice returns to the original orientation and size when nothing needs clamping", () => {
-    const state = resizeWidth(defaultState(1000, 800), 300);
+    const state = resizeFromCorner(defaultState(1000, 800), "bottom-right", 300);
     const twice = rotate(rotate(state, 1000, 800), 1000, 800);
     expect(twice.orientation).toBe(state.orientation);
     expect(twice.width).toBeCloseTo(state.width);
@@ -160,46 +159,77 @@ describe("flipVertical", () => {
   });
 });
 
-describe("resizeWidth", () => {
-  test("keeps the golden ratio when resizing a landscape overlay by width", () => {
+describe("resizeFromCorner", () => {
+  function edges(s: { width: number; height: number; offsetX: number; offsetY: number }) {
+    return {
+      left: s.offsetX - s.width / 2,
+      right: s.offsetX + s.width / 2,
+      top: s.offsetY - s.height / 2,
+      bottom: s.offsetY + s.height / 2,
+    };
+  }
+
+  test("keeps the golden ratio when resizing a landscape overlay from a corner", () => {
     const state = defaultState(1000, 800);
-    const resized = resizeWidth(state, 500);
+    const resized = resizeFromCorner(state, "bottom-right", 500);
     expect(resized.width).toBeCloseTo(500);
     expect(resized.height).toBeCloseTo(500 / PHI);
   });
 
-  test("keeps the golden ratio when resizing a portrait overlay by width", () => {
+  test("keeps the golden ratio when resizing a portrait overlay from a corner", () => {
     const state = defaultState(400, 800);
-    const resized = resizeWidth(state, 200);
-    expect(resized.width).toBeCloseTo(200);
-    expect(resized.height).toBeCloseTo(200 * PHI);
+    const resized = resizeFromCorner(state, "bottom-right", 200);
+    expect(resized.height).toBeCloseTo(200);
+    expect(resized.width).toBeCloseTo(200 / PHI);
   });
 
   test("clamps to a minimum size", () => {
     const state = defaultState(1000, 800);
-    const resized = resizeWidth(state, 1, 40);
+    const resized = resizeFromCorner(state, "bottom-right", 1, 40);
     expect(resized.width).toBeCloseTo(40);
   });
-});
 
-describe("resizeHeight", () => {
-  test("keeps the golden ratio when resizing a landscape overlay by height", () => {
+  test("marks the state as resized", () => {
     const state = defaultState(1000, 800);
-    const resized = resizeHeight(state, 300);
-    expect(resized.height).toBeCloseTo(300);
-    expect(resized.width).toBeCloseTo(300 * PHI);
+    expect(state.resized).toBe(false);
+    expect(resizeFromCorner(state, "bottom-right", 500).resized).toBe(true);
   });
 
-  test("keeps the golden ratio when resizing a portrait overlay by height", () => {
-    const state = defaultState(400, 800);
-    const resized = resizeHeight(state, 400);
-    expect(resized.height).toBeCloseTo(400);
-    expect(resized.width).toBeCloseTo(400 / PHI);
+  test("dragging the bottom-right corner anchors the top-left corner in place", () => {
+    const state = defaultState(1000, 800);
+    const before = edges(state);
+    const resized = resizeFromCorner(state, "bottom-right", 500);
+    const after = edges(resized);
+    expect(after.left).toBeCloseTo(before.left);
+    expect(after.top).toBeCloseTo(before.top);
+    expect(after.right).toBeCloseTo(before.left + resized.width);
+    expect(after.bottom).toBeCloseTo(before.top + resized.height);
   });
 
-  test("clamps to a minimum size", () => {
+  test("dragging the top-left corner anchors the bottom-right corner in place", () => {
     const state = defaultState(1000, 800);
-    const resized = resizeHeight(state, 1, 40);
-    expect(resized.height).toBeCloseTo(40);
+    const before = edges(state);
+    const resized = resizeFromCorner(state, "top-left", 500);
+    const after = edges(resized);
+    expect(after.right).toBeCloseTo(before.right);
+    expect(after.bottom).toBeCloseTo(before.bottom);
+  });
+
+  test("dragging the top-right corner anchors the bottom-left corner in place", () => {
+    const state = defaultState(1000, 800);
+    const before = edges(state);
+    const resized = resizeFromCorner(state, "top-right", 500);
+    const after = edges(resized);
+    expect(after.left).toBeCloseTo(before.left);
+    expect(after.bottom).toBeCloseTo(before.bottom);
+  });
+
+  test("dragging the bottom-left corner anchors the top-right corner in place", () => {
+    const state = defaultState(1000, 800);
+    const before = edges(state);
+    const resized = resizeFromCorner(state, "bottom-left", 500);
+    const after = edges(resized);
+    expect(after.right).toBeCloseTo(before.right);
+    expect(after.top).toBeCloseTo(before.top);
   });
 });

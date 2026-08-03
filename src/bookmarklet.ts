@@ -1,12 +1,13 @@
 import { createOverlay, OVERLAY_ID, renderOverlay } from "./overlay-dom";
 import {
+  CORNER_SIGN,
   defaultState,
   flipHorizontal,
   flipVertical,
   move,
-  resizeHeight,
-  resizeWidth,
+  resizeFromCorner,
   rotate,
+  type Corner,
   type OverlayState,
 } from "./overlay-state";
 
@@ -63,30 +64,34 @@ export function init(): void {
     overlay.root.remove();
   });
 
-  overlay.handle.addEventListener("pointerdown", (event) => {
-    event.preventDefault();
-    const startX = event.clientX;
-    const startY = event.clientY;
-    const startState = state;
+  for (const corner of Object.keys(overlay.handles) as Corner[]) {
+    overlay.handles[corner].addEventListener("pointerdown", (event) => {
+      event.preventDefault();
+      const startX = event.clientX;
+      const startY = event.clientY;
+      const startState = state;
+      const sign = CORNER_SIGN[corner];
 
-    function onMove(moveEvent: PointerEvent) {
-      const dx = moveEvent.clientX - startX;
-      const dy = moveEvent.clientY - startY;
-      state =
-        startState.orientation === "landscape"
-          ? resizeWidth(startState, startState.width + dx * 2)
-          : resizeHeight(startState, startState.height + dy * 2);
-      renderOverlay(overlay, state);
-    }
+      function onMove(moveEvent: PointerEvent) {
+        const dx = moveEvent.clientX - startX;
+        const dy = moveEvent.clientY - startY;
+        const newSize =
+          startState.orientation === "landscape"
+            ? startState.width + sign.x * dx
+            : startState.height + sign.y * dy;
+        state = resizeFromCorner(startState, corner, newSize);
+        renderOverlay(overlay, state);
+      }
 
-    function onUp() {
-      window.removeEventListener("pointermove", onMove);
-      window.removeEventListener("pointerup", onUp);
-    }
+      function onUp() {
+        window.removeEventListener("pointermove", onMove);
+        window.removeEventListener("pointerup", onUp);
+      }
 
-    window.addEventListener("pointermove", onMove);
-    window.addEventListener("pointerup", onUp);
-  });
+      window.addEventListener("pointermove", onMove);
+      window.addEventListener("pointerup", onUp);
+    });
+  }
 
   overlay.dragFrame.addEventListener("pointerdown", (event) => {
     event.preventDefault();

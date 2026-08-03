@@ -112,24 +112,36 @@ export function flipVertical(state: OverlayState): OverlayState {
   return { ...state, flippedY: !state.flippedY };
 }
 
-export function resizeWidth(
-  state: OverlayState,
-  newWidth: number,
-  minSize = DEFAULT_MIN_SIZE,
-): OverlayState {
-  const width = Math.max(newWidth, minSize);
-  const height =
-    state.orientation === "landscape" ? width / PHI : width * PHI;
-  return { ...state, width, height, resized: true };
-}
+export type Corner = "top-left" | "top-right" | "bottom-left" | "bottom-right";
 
-export function resizeHeight(
+/**
+ * Sign of the offset shift needed, per axis, to keep the corner opposite the
+ * given one anchored in place while resizing.
+ */
+export const CORNER_SIGN: Record<Corner, { x: 1 | -1; y: 1 | -1 }> = {
+  "top-left": { x: -1, y: -1 },
+  "top-right": { x: 1, y: -1 },
+  "bottom-left": { x: -1, y: 1 },
+  "bottom-right": { x: 1, y: 1 },
+};
+
+/**
+ * Resizes the overlay by dragging one of its four corners, keeping the
+ * opposite corner anchored in place. `newSize` is the orientation's dominant
+ * dimension (width in landscape, height in portrait); the other dimension
+ * follows via PHI.
+ */
+export function resizeFromCorner(
   state: OverlayState,
-  newHeight: number,
+  corner: Corner,
+  newSize: number,
   minSize = DEFAULT_MIN_SIZE,
 ): OverlayState {
-  const height = Math.max(newHeight, minSize);
-  const width =
-    state.orientation === "landscape" ? height * PHI : height / PHI;
-  return { ...state, width, height, resized: true };
+  const size = Math.max(newSize, minSize);
+  const width = state.orientation === "landscape" ? size : size / PHI;
+  const height = state.orientation === "landscape" ? size / PHI : size;
+  const sign = CORNER_SIGN[corner];
+  const offsetX = state.offsetX + (sign.x * (width - state.width)) / 2;
+  const offsetY = state.offsetY + (sign.y * (height - state.height)) / 2;
+  return { ...state, width, height, offsetX, offsetY, resized: true };
 }
