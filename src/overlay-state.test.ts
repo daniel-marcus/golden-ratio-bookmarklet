@@ -118,6 +118,16 @@ describe("rotate", () => {
     expect(turned.flippedY).toBe(true);
   });
 
+  test("rotating twice returns to the default size when the overlay was never resized, even when the swapped size needed clamping", () => {
+    // landscape viewport where the default rect is width-bound, so the first
+    // rotate (to portrait) has to clamp its height down to fit the viewport
+    const state = defaultState(1000, 800);
+    const twice = rotate(rotate(state, 1000, 800), 1000, 800);
+    expect(twice.orientation).toBe(state.orientation);
+    expect(twice.width).toBeCloseTo(state.width);
+    expect(twice.height).toBeCloseTo(state.height);
+  });
+
   test("preserves a dragged position", () => {
     const state = move(defaultState(1000, 800), 40, -15);
     const turned = rotate(state, 1000, 800);

@@ -11,6 +11,13 @@ export interface OverlayState {
   /** offset of the overlay's center from the viewport's center, in pixels */
   offsetX: number;
   offsetY: number;
+  /**
+   * Whether the user has manually resized the overlay. While false, rotate()
+   * recomputes the viewport-maximized size for the new orientation instead of
+   * swapping the current dimensions, so alternating rotates settle back on
+   * the default size instead of shrinking further each time.
+   */
+  resized: boolean;
 }
 
 const DEFAULT_MIN_SIZE = 40;
@@ -39,6 +46,7 @@ export function defaultState(
       flippedY: true,
       offsetX: 0,
       offsetY: 0,
+      resized: false,
     };
   }
 
@@ -51,6 +59,7 @@ export function defaultState(
     flippedY: true,
     offsetX: 0,
     offsetY: 0,
+    resized: false,
   };
 }
 
@@ -72,6 +81,19 @@ export function rotate(
 ): OverlayState {
   const orientation: Orientation =
     state.orientation === "landscape" ? "portrait" : "landscape";
+
+  // Untouched sizing tracks the viewport, not the previous rotation's
+  // (possibly clamped) dimensions -- otherwise alternating rotates ratchet
+  // the overlay smaller and smaller instead of settling on the default size.
+  if (!state.resized) {
+    if (orientation === "landscape") {
+      const width = Math.min(viewportWidth, viewportHeight * PHI);
+      return { ...state, width, height: width / PHI, orientation };
+    }
+
+    const height = Math.min(viewportHeight, viewportWidth * PHI);
+    return { ...state, width: height / PHI, height, orientation };
+  }
 
   if (orientation === "landscape") {
     const width = Math.min(state.height, viewportWidth, viewportHeight * PHI);
@@ -98,7 +120,7 @@ export function resizeWidth(
   const width = Math.max(newWidth, minSize);
   const height =
     state.orientation === "landscape" ? width / PHI : width * PHI;
-  return { ...state, width, height };
+  return { ...state, width, height, resized: true };
 }
 
 export function resizeHeight(
@@ -109,5 +131,5 @@ export function resizeHeight(
   const height = Math.max(newHeight, minSize);
   const width =
     state.orientation === "landscape" ? height * PHI : height / PHI;
-  return { ...state, width, height };
+  return { ...state, width, height, resized: true };
 }
