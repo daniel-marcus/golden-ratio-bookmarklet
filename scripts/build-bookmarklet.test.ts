@@ -14,10 +14,10 @@ describe("buildBookmarkletUri", () => {
 
     const code = decodeURIComponent(uri.slice("javascript:".length));
 
-    eval(code);
+    eval(code); // oxlint-disable-line no-eval
     expect(document.getElementById(OVERLAY_ID)).not.toBeNull();
 
-    eval(code);
+    eval(code); // oxlint-disable-line no-eval
     expect(document.getElementById(OVERLAY_ID)).toBeNull();
   });
 });
