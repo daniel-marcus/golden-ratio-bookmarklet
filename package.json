@@ -4,7 +4,7 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "bun --hot ./index.ts",
+    "dev": "bun ./index.ts",
     "build": "bun run scripts/build-pages.ts",
     "build:readme": "bun run scripts/build-readme.ts",
     "test": "bun test",
