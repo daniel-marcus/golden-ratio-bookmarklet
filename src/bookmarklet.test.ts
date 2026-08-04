@@ -38,7 +38,7 @@ describe("init", () => {
 
     click(flipBtn);
     expect(svg.style.transform).not.toBe(transformBefore);
-    expect(svg.style.transform).toContain("scale(-1,");
+    expect(svg.style.transform).toContain("scale(1,");
 
     click(flipBtn);
     expect(svg.style.transform).toBe(transformBefore);

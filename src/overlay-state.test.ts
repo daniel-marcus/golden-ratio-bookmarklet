@@ -40,9 +40,9 @@ describe("defaultState", () => {
     expect(state.height).toBeLessThanOrEqual(1200);
   });
 
-  test("defaults to unflipped, matching the common spiral representation via rotation alone", () => {
+  test("defaults to flipped", () => {
     const state = defaultState(1000, 800);
-    expect(state.flipped).toBe(false);
+    expect(state.flipped).toBe(true);
   });
 
   test("defaults to a zero offset -- centered, since offsets are relative to the viewport center", () => {
@@ -111,7 +111,7 @@ describe("rotate", () => {
   test("preserves the flip flag", () => {
     const state = flipHorizontal(defaultState(1000, 800));
     const turned = rotate(state, 1000, 800);
-    expect(turned.flipped).toBe(true);
+    expect(turned.flipped).toBe(state.flipped);
   });
 
   test("rotating twice returns to the default size when the overlay was never resized, even when the swapped size needed clamping", () => {
@@ -153,11 +153,11 @@ describe("flipHorizontal", () => {
   test("toggles flipped without touching size or rotation", () => {
     const state = defaultState(1000, 800);
     const flipped = flipHorizontal(state);
-    expect(flipped.flipped).toBe(true);
+    expect(flipped.flipped).toBe(!state.flipped);
     expect(flipped.rotation).toBe(state.rotation);
     expect(flipped.width).toBeCloseTo(state.width);
     expect(flipped.height).toBeCloseTo(state.height);
-    expect(flipHorizontal(flipped).flipped).toBe(false);
+    expect(flipHorizontal(flipped).flipped).toBe(state.flipped);
   });
 });
 

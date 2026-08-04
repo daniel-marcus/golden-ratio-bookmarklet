@@ -37,15 +37,15 @@ export function defaultState(viewportWidth: number, viewportHeight: number): Ove
   const isLandscape = viewportWidth >= viewportHeight;
 
   // Rotation 2 (landscape) / 3 (portrait) land the spiral's large square
-  // along the bottom edge -- the common golden-spiral illustration -- via a
-  // true turn of the drawing rather than a mirror flag.
+  // along the bottom edge; combined with the default flip, this matches the
+  // common golden-spiral illustration.
   if (isLandscape) {
     const width = Math.min(viewportWidth, viewportHeight * PHI);
     return {
       width,
       height: width / PHI,
       rotation: 2,
-      flipped: false,
+      flipped: true,
       offsetX: 0,
       offsetY: 0,
       resized: false,
@@ -57,7 +57,7 @@ export function defaultState(viewportWidth: number, viewportHeight: number): Ove
     width: height / PHI,
     height,
     rotation: 3,
-    flipped: false,
+    flipped: true,
     offsetX: 0,
     offsetY: 0,
     resized: false,
