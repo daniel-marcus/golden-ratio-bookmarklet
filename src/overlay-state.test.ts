@@ -3,7 +3,6 @@ import { PHI } from "./geometry";
 import {
   defaultState,
   flipHorizontal,
-  flipVertical,
   move,
   resizeFromCorner,
   rotate,
@@ -12,7 +11,7 @@ import {
 describe("defaultState", () => {
   test("landscape viewport gets a landscape rect maximized to viewport width", () => {
     const state = defaultState(1000, 800);
-    expect(state.orientation).toBe("landscape");
+    expect(state.rotation % 2).toBe(0);
     expect(state.width).toBeCloseTo(1000);
     expect(state.height).toBeCloseTo(1000 / PHI);
   });
@@ -20,7 +19,7 @@ describe("defaultState", () => {
   test("landscape viewport whose height is the binding constraint shrinks to fit", () => {
     // width/PHI would exceed viewport height, so height should drive sizing
     const state = defaultState(1000, 400);
-    expect(state.orientation).toBe("landscape");
+    expect(state.rotation % 2).toBe(0);
     expect(state.height).toBeCloseTo(400);
     expect(state.width).toBeCloseTo(400 * PHI);
     expect(state.width).toBeLessThanOrEqual(1000);
@@ -28,23 +27,22 @@ describe("defaultState", () => {
 
   test("portrait viewport (mobile) gets a portrait rect by default", () => {
     const state = defaultState(400, 600);
-    expect(state.orientation).toBe("portrait");
+    expect(state.rotation % 2).toBe(1);
     expect(state.height).toBeCloseTo(600);
     expect(state.width).toBeCloseTo(600 / PHI);
   });
 
   test("portrait viewport whose width is the binding constraint shrinks to fit", () => {
     const state = defaultState(300, 1200);
-    expect(state.orientation).toBe("portrait");
+    expect(state.rotation % 2).toBe(1);
     expect(state.width).toBeCloseTo(300);
     expect(state.height).toBeCloseTo(300 * PHI);
     expect(state.height).toBeLessThanOrEqual(1200);
   });
 
-  test("defaults to unflipped horizontally but flipped vertically, matching the common spiral representation", () => {
+  test("defaults to unflipped, matching the common spiral representation via rotation alone", () => {
     const state = defaultState(1000, 800);
-    expect(state.flippedX).toBe(false);
-    expect(state.flippedY).toBe(true);
+    expect(state.flipped).toBe(false);
   });
 
   test("defaults to a zero offset -- centered, since offsets are relative to the viewport center", () => {
@@ -69,14 +67,13 @@ describe("move", () => {
     expect(moved.offsetY).toBeCloseTo(state.offsetY + 9000);
   });
 
-  test("does not change size, orientation, or flip flags", () => {
+  test("does not change size, rotation, or flip", () => {
     const state = defaultState(1000, 800);
     const moved = move(state, 10, 10);
     expect(moved.width).toBeCloseTo(state.width);
     expect(moved.height).toBeCloseTo(state.height);
-    expect(moved.orientation).toBe(state.orientation);
-    expect(moved.flippedX).toBe(state.flippedX);
-    expect(moved.flippedY).toBe(state.flippedY);
+    expect(moved.rotation).toBe(state.rotation);
+    expect(moved.flipped).toBe(state.flipped);
   });
 });
 
@@ -85,7 +82,8 @@ describe("rotate", () => {
     // resized down first so the swapped (portrait) dimensions comfortably fit the viewport
     const state = resizeFromCorner(defaultState(1000, 800), "bottom-right", 300);
     const turned = rotate(state, 1000, 800);
-    expect(turned.orientation).toBe("portrait");
+    expect(turned.rotation).toBe(((state.rotation + 1) % 4) as typeof state.rotation);
+    expect(turned.rotation % 2).toBe(1);
     expect(turned.width).toBeCloseTo(state.height);
     expect(turned.height).toBeCloseTo(state.width);
   });
@@ -96,25 +94,24 @@ describe("rotate", () => {
     // (and its controls) below the visible area
     const state = defaultState(1000, 800);
     const turned = rotate(state, 1000, 800);
-    expect(turned.orientation).toBe("portrait");
+    expect(turned.rotation % 2).toBe(1);
     expect(turned.height).toBeLessThanOrEqual(800);
     expect(turned.width).toBeLessThanOrEqual(1000);
     expect(turned.width).toBeCloseTo(turned.height / PHI);
   });
 
-  test("rotating twice returns to the original orientation and size when nothing needs clamping", () => {
+  test("rotating twice returns to the original rotation parity and size when nothing needs clamping", () => {
     const state = resizeFromCorner(defaultState(1000, 800), "bottom-right", 300);
     const twice = rotate(rotate(state, 1000, 800), 1000, 800);
-    expect(twice.orientation).toBe(state.orientation);
+    expect(twice.rotation).toBe(((state.rotation + 2) % 4) as typeof state.rotation);
     expect(twice.width).toBeCloseTo(state.width);
     expect(twice.height).toBeCloseTo(state.height);
   });
 
-  test("preserves both flip flags", () => {
+  test("preserves the flip flag", () => {
     const state = flipHorizontal(defaultState(1000, 800));
     const turned = rotate(state, 1000, 800);
-    expect(turned.flippedX).toBe(true);
-    expect(turned.flippedY).toBe(true);
+    expect(turned.flipped).toBe(true);
   });
 
   test("rotating twice returns to the default size when the overlay was never resized, even when the swapped size needed clamping", () => {
@@ -122,7 +119,7 @@ describe("rotate", () => {
     // rotate (to portrait) has to clamp its height down to fit the viewport
     const state = defaultState(1000, 800);
     const twice = rotate(rotate(state, 1000, 800), 1000, 800);
-    expect(twice.orientation).toBe(state.orientation);
+    expect(twice.rotation % 2).toBe(state.rotation % 2);
     expect(twice.width).toBeCloseTo(state.width);
     expect(twice.height).toBeCloseTo(state.height);
   });
@@ -133,29 +130,34 @@ describe("rotate", () => {
     expect(turned.offsetX).toBeCloseTo(state.offsetX);
     expect(turned.offsetY).toBeCloseTo(state.offsetY);
   });
-});
 
-describe("flipHorizontal", () => {
-  test("toggles flippedX without touching flippedY, size, or orientation", () => {
+  test("cycles through all four quarter-turns and returns to the start on the fourth rotate", () => {
     const state = defaultState(1000, 800);
-    const flipped = flipHorizontal(state);
-    expect(flipped.flippedX).toBe(true);
-    expect(flipped.flippedY).toBe(state.flippedY);
-    expect(flipped.width).toBeCloseTo(state.width);
-    expect(flipped.height).toBeCloseTo(state.height);
-    expect(flipHorizontal(flipped).flippedX).toBe(false);
+    const rotations: number[] = [state.rotation];
+    let current = state;
+    for (let i = 0; i < 4; i++) {
+      current = rotate(current, 1000, 800);
+      rotations.push(current.rotation);
+    }
+    expect(rotations).toEqual([
+      state.rotation,
+      (state.rotation + 1) % 4,
+      (state.rotation + 2) % 4,
+      (state.rotation + 3) % 4,
+      state.rotation,
+    ]);
   });
 });
 
-describe("flipVertical", () => {
-  test("toggles flippedY without touching flippedX, size, or orientation", () => {
+describe("flipHorizontal", () => {
+  test("toggles flipped without touching size or rotation", () => {
     const state = defaultState(1000, 800);
-    const flipped = flipVertical(state);
-    expect(flipped.flippedY).toBe(!state.flippedY);
-    expect(flipped.flippedX).toBe(state.flippedX);
+    const flipped = flipHorizontal(state);
+    expect(flipped.flipped).toBe(true);
+    expect(flipped.rotation).toBe(state.rotation);
     expect(flipped.width).toBeCloseTo(state.width);
     expect(flipped.height).toBeCloseTo(state.height);
-    expect(flipVertical(flipped).flippedY).toBe(state.flippedY);
+    expect(flipHorizontal(flipped).flipped).toBe(false);
   });
 });
 

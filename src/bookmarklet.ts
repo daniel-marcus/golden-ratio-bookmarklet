@@ -3,7 +3,6 @@ import {
   CORNER_SIGN,
   defaultState,
   flipHorizontal,
-  flipVertical,
   move,
   resizeFromCorner,
   rotate,
@@ -55,24 +54,29 @@ export function init(): void {
   }
 
   const flipHorizontalBtn = makeButton("⇆", "flip-horizontal");
-  const flipVerticalBtn = makeButton("⇅", "flip-vertical");
   const rotateBtn = makeButton("⟳", "rotate");
   const closeBtn = makeButton("×", "close");
-  overlay.controls.append(flipHorizontalBtn, flipVerticalBtn, rotateBtn, closeBtn);
+  overlay.controls.append(flipHorizontalBtn, rotateBtn, closeBtn);
+
+  // The flip only ever mirrors the drawing's own (pre-rotation) horizontal
+  // axis -- once a quarter turn has been applied, that axis appears
+  // top-to-bottom on screen instead of left-to-right, so the glyph has to
+  // track the current rotation's parity to keep describing what the button
+  // actually does.
+  function updateFlipIcon() {
+    flipHorizontalBtn.textContent = state.rotation % 2 === 0 ? "⇆" : "⇅";
+  }
+  updateFlipIcon();
 
   flipHorizontalBtn.addEventListener("click", () => {
     state = flipHorizontal(state);
     renderOverlay(overlay, state);
   });
 
-  flipVerticalBtn.addEventListener("click", () => {
-    state = flipVertical(state);
-    renderOverlay(overlay, state);
-  });
-
   rotateBtn.addEventListener("click", () => {
     state = rotate(state, window.innerWidth, window.innerHeight);
     renderOverlay(overlay, state);
+    updateFlipIcon();
   });
 
   closeBtn.addEventListener("click", () => {
@@ -91,7 +95,7 @@ export function init(): void {
         const dx = moveEvent.clientX - startX;
         const dy = moveEvent.clientY - startY;
         const newSize =
-          startState.orientation === "landscape"
+          startState.rotation % 2 === 0
             ? startState.width + sign.x * dx
             : startState.height + sign.y * dy;
         state = resizeFromCorner(startState, corner, newSize);

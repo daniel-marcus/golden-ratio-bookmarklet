@@ -1,19 +1,25 @@
 import { PHI } from "./geometry";
 
-export type Orientation = "landscape" | "portrait";
+/** Quarter turns clockwise applied to the spiral drawing. */
+export type Rotation = 0 | 1 | 2 | 3;
 
 export interface OverlayState {
   width: number;
   height: number;
-  orientation: Orientation;
-  flippedX: boolean;
-  flippedY: boolean;
+  rotation: Rotation;
+  /**
+   * Horizontal mirror of the spiral drawing. Combined with rotate(), this
+   * reaches all 8 orientations of the spiral (4 turns x mirrored or not) --
+   * a second flip axis would be redundant, since mirroring both axes is
+   * just a 180deg rotation.
+   */
+  flipped: boolean;
   /** offset of the overlay's center from the viewport's center, in pixels */
   offsetX: number;
   offsetY: number;
   /**
    * Whether the user has manually resized the overlay. While false, rotate()
-   * recomputes the viewport-maximized size for the new orientation instead of
+   * recomputes the viewport-maximized size for the new rotation instead of
    * swapping the current dimensions, so alternating rotates settle back on
    * the default size instead of shrinking further each time.
    */
@@ -28,18 +34,18 @@ const DEFAULT_MIN_SIZE = 40;
  * portrait, e.g. a phone held upright, gets the 90deg-turned version).
  */
 export function defaultState(viewportWidth: number, viewportHeight: number): OverlayState {
-  const orientation: Orientation = viewportWidth >= viewportHeight ? "landscape" : "portrait";
+  const isLandscape = viewportWidth >= viewportHeight;
 
-  // Vertically flipped by default: the common golden-spiral illustration
-  // has the large square along the bottom, not the top.
-  if (orientation === "landscape") {
+  // Rotation 2 (landscape) / 3 (portrait) land the spiral's large square
+  // along the bottom edge -- the common golden-spiral illustration -- via a
+  // true turn of the drawing rather than a mirror flag.
+  if (isLandscape) {
     const width = Math.min(viewportWidth, viewportHeight * PHI);
     return {
       width,
       height: width / PHI,
-      orientation,
-      flippedX: false,
-      flippedY: true,
+      rotation: 2,
+      flipped: false,
       offsetX: 0,
       offsetY: 0,
       resized: false,
@@ -50,9 +56,8 @@ export function defaultState(viewportWidth: number, viewportHeight: number): Ove
   return {
     width: height / PHI,
     height,
-    orientation,
-    flippedX: false,
-    flippedY: true,
+    rotation: 3,
+    flipped: false,
     offsetX: 0,
     offsetY: 0,
     resized: false,
@@ -65,46 +70,46 @@ export function move(state: OverlayState, dx: number, dy: number): OverlayState 
 }
 
 /**
- * Turns the overlay 90deg by swapping its dimensions, then clamps the
- * result to fit the viewport. Without this, a landscape overlay that
- * covers the full viewport width becomes, once turned, taller than the
- * viewport itself -- stranding the overlay (and its controls) out of view.
+ * Turns the spiral drawing a further 90deg clockwise (a true rotation of the
+ * drawing itself, not a re-derived layout), then clamps the resulting
+ * bounding box to fit the viewport. A landscape box necessarily becomes a
+ * portrait one (and vice versa) once turned a quarter circle -- without
+ * clamping, a landscape overlay that covers the full viewport width becomes,
+ * once turned, taller than the viewport itself, stranding the overlay (and
+ * its controls) out of view.
  */
 export function rotate(
   state: OverlayState,
   viewportWidth: number,
   viewportHeight: number,
 ): OverlayState {
-  const orientation: Orientation = state.orientation === "landscape" ? "portrait" : "landscape";
+  const rotation = ((state.rotation + 1) % 4) as Rotation;
+  const isLandscape = rotation % 2 === 0;
 
   // Untouched sizing tracks the viewport, not the previous rotation's
   // (possibly clamped) dimensions -- otherwise alternating rotates ratchet
   // the overlay smaller and smaller instead of settling on the default size.
   if (!state.resized) {
-    if (orientation === "landscape") {
+    if (isLandscape) {
       const width = Math.min(viewportWidth, viewportHeight * PHI);
-      return { ...state, width, height: width / PHI, orientation };
+      return { ...state, width, height: width / PHI, rotation };
     }
 
     const height = Math.min(viewportHeight, viewportWidth * PHI);
-    return { ...state, width: height / PHI, height, orientation };
+    return { ...state, width: height / PHI, height, rotation };
   }
 
-  if (orientation === "landscape") {
+  if (isLandscape) {
     const width = Math.min(state.height, viewportWidth, viewportHeight * PHI);
-    return { ...state, width, height: width / PHI, orientation };
+    return { ...state, width, height: width / PHI, rotation };
   }
 
   const height = Math.min(state.width, viewportHeight, viewportWidth * PHI);
-  return { ...state, width: height / PHI, height, orientation };
+  return { ...state, width: height / PHI, height, rotation };
 }
 
 export function flipHorizontal(state: OverlayState): OverlayState {
-  return { ...state, flippedX: !state.flippedX };
-}
-
-export function flipVertical(state: OverlayState): OverlayState {
-  return { ...state, flippedY: !state.flippedY };
+  return { ...state, flipped: !state.flipped };
 }
 
 export type Corner = "top-left" | "top-right" | "bottom-left" | "bottom-right";
@@ -122,9 +127,9 @@ export const CORNER_SIGN: Record<Corner, { x: 1 | -1; y: 1 | -1 }> = {
 
 /**
  * Resizes the overlay by dragging one of its four corners, keeping the
- * opposite corner anchored in place. `newSize` is the orientation's dominant
- * dimension (width in landscape, height in portrait); the other dimension
- * follows via PHI.
+ * opposite corner anchored in place. `newSize` is the current rotation's
+ * dominant dimension (width when landscape, height when portrait); the other
+ * dimension follows via PHI.
  */
 export function resizeFromCorner(
   state: OverlayState,
@@ -133,8 +138,9 @@ export function resizeFromCorner(
   minSize = DEFAULT_MIN_SIZE,
 ): OverlayState {
   const size = Math.max(newSize, minSize);
-  const width = state.orientation === "landscape" ? size : size / PHI;
-  const height = state.orientation === "landscape" ? size / PHI : size;
+  const isLandscape = state.rotation % 2 === 0;
+  const width = isLandscape ? size : size / PHI;
+  const height = isLandscape ? size / PHI : size;
   const sign = CORNER_SIGN[corner];
   const offsetX = state.offsetX + (sign.x * (width - state.width)) / 2;
   const offsetY = state.offsetY + (sign.y * (height - state.height)) / 2;

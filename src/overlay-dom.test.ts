@@ -66,25 +66,50 @@ describe("renderOverlay", () => {
     expect(overlay.root.style.transform).toContain("translate(calc(-50% + 0px), calc(-50% + 0px))");
   });
 
-  test("applies a horizontal mirror transform when flippedX", () => {
+  test("applies a horizontal mirror transform when flipped", () => {
     const overlay = createOverlay();
-    const state = { ...defaultState(1000, 800), flippedX: true, flippedY: false };
+    const state = { ...defaultState(1000, 800), flipped: true };
     renderOverlay(overlay, state);
     expect(overlay.svg.style.transform).toContain("scale(-1, 1)");
   });
 
-  test("applies a vertical mirror transform when flippedY", () => {
+  test("applies no mirror transform when not flipped", () => {
     const overlay = createOverlay();
-    const state = { ...defaultState(1000, 800), flippedX: false, flippedY: true };
+    const state = { ...defaultState(1000, 800), flipped: false };
     renderOverlay(overlay, state);
-    expect(overlay.svg.style.transform).toContain("scale(1, -1)");
+    expect(overlay.svg.style.transform).toContain("scale(1, 1)");
   });
 
-  test("combines both mirror axes when both flipped", () => {
+  test("rotates the svg by 90deg per quarter-turn of state.rotation", () => {
     const overlay = createOverlay();
-    const state = { ...defaultState(1000, 800), flippedX: true, flippedY: true };
+    const state = { ...defaultState(1000, 800), rotation: 0 as const };
     renderOverlay(overlay, state);
-    expect(overlay.svg.style.transform).toContain("scale(-1, -1)");
+    expect(overlay.svg.style.transform).toContain("rotate(0deg)");
+
+    const state90 = { ...state, rotation: 1 as const };
+    renderOverlay(overlay, state90);
+    expect(overlay.svg.style.transform).toContain("rotate(90deg)");
+
+    const state180 = { ...state, rotation: 2 as const };
+    renderOverlay(overlay, state180);
+    expect(overlay.svg.style.transform).toContain("rotate(180deg)");
+
+    const state270 = { ...state, rotation: 3 as const };
+    renderOverlay(overlay, state270);
+    expect(overlay.svg.style.transform).toContain("rotate(270deg)");
+  });
+
+  test("swaps the svg's own width/height (pre-rotation) when the rotation is a quarter turn", () => {
+    const overlay = createOverlay();
+    const state = defaultState(1000, 800); // rotation 2, even -> no swap
+    renderOverlay(overlay, state);
+    expect(parseFloat(overlay.svg.style.width)).toBeCloseTo(state.width);
+    expect(parseFloat(overlay.svg.style.height)).toBeCloseTo(state.height);
+
+    const turnedState = { ...state, rotation: 1 as const };
+    renderOverlay(overlay, turnedState);
+    expect(parseFloat(overlay.svg.style.width)).toBeCloseTo(state.height);
+    expect(parseFloat(overlay.svg.style.height)).toBeCloseTo(state.width);
   });
 
   test("draws one rect per spiral square, plus matching arcs and circles", () => {

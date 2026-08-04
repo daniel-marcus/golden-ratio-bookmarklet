@@ -63,9 +63,8 @@ export function createOverlay(): Overlay {
 
   const svg = svgEl("svg");
   svg.style.position = "absolute";
-  svg.style.inset = "0";
-  svg.style.width = "100%";
-  svg.style.height = "100%";
+  svg.style.left = "50%";
+  svg.style.top = "50%";
   svg.style.overflow = "visible";
   root.appendChild(svg);
 
@@ -119,13 +118,26 @@ export function renderOverlay(overlay: Overlay, state: OverlayState): void {
   root.style.width = `${state.width}px`;
   root.style.height = `${state.height}px`;
   root.style.transform = `translate(calc(-50% + ${state.offsetX}px), calc(-50% + ${state.offsetY}px))`;
-  svg.setAttribute("viewBox", `0 0 ${state.width} ${state.height}`);
-  svg.style.transform = `scale(${state.flippedX ? -1 : 1}, ${state.flippedY ? -1 : 1})`;
+
+  // The svg's own (pre-rotation) box is always the "natural" orientation --
+  // swapped from the displayed width/height whenever the current rotation is
+  // a quarter turn -- so that rotating it by rotation*90deg lands back on the
+  // displayed bounding box while genuinely turning the spiral drawing inside.
+  const isQuarterTurn = state.rotation % 2 === 1;
+  const naturalWidth = isQuarterTurn ? state.height : state.width;
+  const naturalHeight = isQuarterTurn ? state.width : state.height;
+
+  svg.style.width = `${naturalWidth}px`;
+  svg.style.height = `${naturalHeight}px`;
+  svg.style.transform =
+    `translate(-50%, -50%) rotate(${state.rotation * 90}deg) ` +
+    `scale(${state.flipped ? -1 : 1}, 1)`;
+  svg.setAttribute("viewBox", `0 0 ${naturalWidth} ${naturalHeight}`);
 
   svg.replaceChildren();
 
-  const minSize = Math.max(MIN_SQUARE_PX, Math.min(state.width, state.height) * 0.015);
-  const squares = computeSpiralSquares(0, 0, state.width, state.height, minSize);
+  const minSize = Math.max(MIN_SQUARE_PX, Math.min(naturalWidth, naturalHeight) * 0.015);
+  const squares = computeSpiralSquares(0, 0, naturalWidth, naturalHeight, minSize);
 
   for (const square of squares) {
     const rect = svgEl("rect");

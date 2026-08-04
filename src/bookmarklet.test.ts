@@ -44,21 +44,6 @@ describe("init", () => {
     expect(svg.style.transform).toBe(transformBefore);
   });
 
-  test("the vertical flip button mirrors the drawing along y and back", () => {
-    init();
-    const root = document.getElementById(OVERLAY_ID)!;
-    const svg = root.querySelector("svg")!;
-    const flipBtn = root.querySelector<HTMLElement>('[data-action="flip-vertical"]')!;
-    // default state is already flipped vertically, so the first click un-flips it
-    expect(svg.style.transform).toContain("-1)");
-
-    click(flipBtn);
-    expect(svg.style.transform).toContain("scale(1, 1)");
-
-    click(flipBtn);
-    expect(svg.style.transform).toContain("scale(1, -1)");
-  });
-
   test("the rotate button turns the overlay 90deg, clamped to fit the viewport", () => {
     init();
     const root = document.getElementById(OVERLAY_ID)!;
@@ -70,6 +55,40 @@ describe("init", () => {
 
     expect(parseFloat(root.style.height)).toBeLessThanOrEqual(800);
     expect(parseFloat(root.style.width)).toBeLessThanOrEqual(1000);
+  });
+
+  test("the rotate button is a true 90deg turn: four clicks visit four distinct angles and return to the start", () => {
+    init();
+    const root = document.getElementById(OVERLAY_ID)!;
+    const svg = root.querySelector("svg")!;
+    const rotateBtn = root.querySelector<HTMLElement>('[data-action="rotate"]')!;
+
+    const angles = [svg.style.transform.match(/rotate\((\d+)deg\)/)![1]];
+    for (let i = 0; i < 4; i++) {
+      click(rotateBtn);
+      angles.push(svg.style.transform.match(/rotate\((\d+)deg\)/)![1]);
+    }
+
+    expect(new Set(angles.slice(0, 4)).size).toBe(4);
+    expect(angles[4]).toBe(angles[0]);
+  });
+
+  test("the flip button's glyph tracks whether the current rotation mirrors left-right or top-bottom on screen", () => {
+    init();
+    const root = document.getElementById(OVERLAY_ID)!;
+    const flipBtn = root.querySelector<HTMLElement>('[data-action="flip-horizontal"]')!;
+    const rotateBtn = root.querySelector<HTMLElement>('[data-action="rotate"]')!;
+
+    // default state is landscape (even rotation): flip mirrors left-right on screen
+    expect(flipBtn.textContent).toBe("⇆");
+
+    // one turn makes it portrait (odd rotation): the same flip toggle now
+    // mirrors top-bottom on screen, so the glyph must switch to match
+    click(rotateBtn);
+    expect(flipBtn.textContent).toBe("⇅");
+
+    click(rotateBtn);
+    expect(flipBtn.textContent).toBe("⇆");
   });
 
   test("the close button removes the overlay", () => {
