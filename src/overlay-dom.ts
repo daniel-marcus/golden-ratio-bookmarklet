@@ -40,6 +40,7 @@ function createHandle(corner: Corner): HTMLDivElement {
   handle.style.background = STROKE;
   handle.style.cursor = pos.cursor;
   handle.style.pointerEvents = "auto";
+  handle.style.touchAction = "none";
   return handle;
 }
 
@@ -77,6 +78,7 @@ export function createOverlay(): Overlay {
     strip.style.position = "absolute";
     strip.style.pointerEvents = "auto";
     strip.style.cursor = "move";
+    strip.style.touchAction = "none";
     if (edge === "top" || edge === "bottom") {
       strip.style[edge] = `${-DRAG_STRIP_THICKNESS / 2}px`;
       strip.style.left = "0";
