@@ -1,12 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { PHI } from "./geometry";
-import {
-  defaultState,
-  flipHorizontal,
-  move,
-  resizeFromCorner,
-  rotate,
-} from "./overlay-state";
+import { defaultState, flipHorizontal, move, resizeFromCorner, rotate } from "./overlay-state";
 
 describe("defaultState", () => {
   test("landscape viewport gets a landscape rect maximized to viewport width", () => {
